@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Proactive Mobility Drivers</title>
+<script src="js/jquery.js"></script>
+<script src="js/hittest.js"></script>
+<link href="css/styles.css" rel="stylesheet" type="text/css">
+<link href="css/animate.css" rel="stylesheet" type="text/css">
+    
+<script>
+//document ready
+$(document).ready(function(){
+    
+    $("#menu").trigger("play");
+    
+    $('body').keyup(function(event) {
+            $(".rider").stop();                    
+        })
+    
+    $('body').keydown(function(event) {
+        
+        if (keysdown[event.keyCode]) {
+      // Ignore it
+      return;
+        }
+        
+        keysdown[event.keyCode] = true;
+
+        //left arrow
+        if(event.keyCode=='65'){
+           movePlayer("left");
+        }
+        
+        //right arrow
+        if(event.keyCode=='68'){
+           movePlayer("right");
+        }
+       
+        //enter key
+        if(event.keyCode=='32' && $("#darkness").is(":visible")) {
+            $(".cone").fadeIn();
+            score+=100;
+             $("h1.score").addClass("tada animated").text(score+time).one('webkitAnimationEnd mozAnimationEnd MSAnimationEnd oanimationend animationend', function(){
+      $(this).removeClass().addClass("score");});
+            $("#combo").trigger("load").trigger("play");
+
+        }
+        
+        
+        //start the game by running init() if time is 0
+        if(time==0 && event.keyCode=='32'){
+            init();
+			time=1;
+        }
+        //display the start screen again if time is -1
+        if(time==-1 && event.keyCode=='32'){
+            location.reload();
+            $("#info").fadeIn("fast");
+            $("#gameover").fadeOut("fast");
+            time=0;
+            $("#menu").trigger("play");
+    $("#end").trigger("pause");
+
+        }
+        
+    });
+      
+});
+//end doc ready
+
+$(document).keyup(function(e){
+  // Remove this key from the map
+  delete keysdown[e.keyCode];
+});
+  
+// variables
+var time = 0;
+var ball_speed;
+var score;
+var game;
+var keysdown = {};
+
+//function init    
+function init(){
+    //reset some variables for a new game
+    time = 0;
+    score = 0;
+    ball_speed = 5500;
+    
+    if($(".person").hasClass('bg2')){
+        $(".person").removeClass('bg2').css('z-index', '0');
+    }
+    
+    $("#menu").trigger("pause");
+    $("#play").trigger("play");
+
+    //reposition the player 
+    $(".rider").css({"top":"514px","left":"575px"});
+    //make these items visible again
+    $(".rider, .person, .score").fadeIn("fast");
+    //clear the score
+    $(".score").text("");
+    //fade out the info and gameover div
+    $("#info, #gameover").fadeOut();
+    //move the balls
+    $(".person").each(function(){
+        //animate the ball;
+        moveBall($(this));
+    });
+
+    game = setInterval(gameLoop,10);
+            
+}
+//end init
+
+//function movePlayer. dir is a parameter that we can set if we want the player to go left or right
+function movePlayer(dir){
+    if(dir=="left"){
+        //add a class to flip the image. clearQueue() will stop all current animations in queue and finally animate it to 10px on the left in 2 seconds
+        $(".rider").clearQueue().animate({"left" : "270px"},1500);
+    }
+    if(dir=="right"){
+        //remove a class to flip the image. clearQueue() will stop all current animations in queue and finally animate it to 740px to the left in 2 seconds
+        $(".rider").clearQueue().animate({"left" : "884px"},1500);
+    }
+}
+//function gameLoop
+function gameLoop(){
+    //increase the time by 1
+    time++;
+    $("h1.score").text(score+time);
+    
+    //check if balls are touching the player 
+    $(".person").each(function(){
+        if($(this).hitTest($(".rider"))){
+          
+                $("#hit").trigger("play");
+                //stop the game
+                stopGame();
+            
+        }
+        
+        if(!$(this).attr('lit')) {
+            
+           if($(".cone").is(":visible") && $(this).hitTest($(".cone"))) {
+            $(this).attr('lit', 'true').addClass('bg2').css('z-index', '2');
+            score+=10;
+            
+             $("h1.score").addClass("tada animated").text(score+time).one('webkitAnimationEnd mozAnimationEnd MSAnimationEnd oanimationend animationend', function(){
+      $(this).removeClass().addClass("score");});
+                    $("#combo").trigger("play");
+
+        }                                          
+    }
+        
+        if($(".cone").is(":visible")) {
+    
+           if(!$(this).hitTest($(".cone"))) {
+            $(this).removeAttr('lit').removeClass('bg2').css('z-index', '0');
+            }  
+        }
+    }) 
+    
+    $(".bg2").css("left", "+=10px");
+    
+    
+    if(time==1000){
+        $("#darkness").fadeIn();
+    }
+    
+    if(time==2600){
+        $("#darkness").fadeOut();
+        $(".cone").fadeOut();
+        $(".person").removeClass('bg2').addClass('bg1').css('z-index', '0');
+    }
+    
+    if(time==3000){
+        $("#gameover").css('background-image', 'url("media/win.gif")');
+        $("#win").trigger("play");
+        stopGame();
+    }
+    
+    if($('.rider').css('opacity') < 1) {
+        ($('.rider').css('opacity', '1'));
+}
+    
+    $(".cone").css("left", $(".rider").offset().left+-36+"px").css("top", $(".rider").offset().top+-240+"px");
+    
+    if ($(".person").hasClass('bg2')){
+$(".bg2").css("left", "50");
+    }
+    
+    
+//end gameLoop
+}
+    
+//function moveBall      
+function moveBall(me){
+    //randomise the top position and left position, delay between 0-5 seconds then animate downwards. When the animation is complete, repeat the steps again
+    $(me).css("top",Math.round(Math.random()*-500-150)+"px").css("left",Math.round(Math.random()*680+270)+"px").delay(Math.random()*3000).animate({"top":1000+"px"},ball_speed,"linear",function(){moveBall(me)});
+}
+  
+//function darkness
+function darkness(){
+    $("#darkness").show();
+}
+    
+    
+// function moving background
+
+$(function backgroundLoop(){  
+        var x = 0;
+    setInterval(function(){
+        
+        x+=2;
+        $("#game").css('background-position', '0 ' + x + 'px');
+    }, 2);
+})    
+
+// end function moving background
+
+
+//function stopGame    
+function stopGame(){
+    //stop the interval
+    clearInterval(game);
+    //stop all animations and hide items
+    $(".rider, .person").stop().clearQueue().hide();
+    $("h1.score").hide();
+    //set some text in #gameover h3 for the score
+    $("#gameover h3").text("You scored "+$(".score").text());
+    //fade in #gameover
+    $("#gameover").fadeIn("slow");
+
+    
+    //reset the time to -1
+    time=-1;
+    //play end
+    $("#end").trigger("play");
+    $("#play").trigger("pause");
+    $("#").trigger("load").trigger("play");
+    $("#darkness").hide();
+    $(".cone").hide();
+    $(".bg2").hide();
+}
+  
+//end function stopGame
+    
+    
+    
+    
+</script>
+</head>
+<body>
+<section id="game">
+     <div id="info">
+    </div>
+
+    <div id="gameover" style="display:none">
+    <h3></h3>
+    </div>
+    <div id="gamewin" style="display:none">
+        <h3></h3>
+    </div>
+
+    <h1 class="score"></h1>
+    
+    <div id="darkness">
+    </div>
+    
+    <div id="bonus">
+        
+    </div>
+
+    <div id="roadarea">
+    <div class="person"></div>
+    <div class="person"></div>
+    <div class="person"></div>
+    <div class="person"></div>
+    <div class="rider">           
+    </div>  
+    <img class="cone" src="images/cone.png">   
+    </div>    
+
+</section>
+</body>
+    
+<audio id="hit">
+  <source src="media/hit2.mp3" type="audio/mpeg">
+</audio>
+    
+<audio id="combo">
+  <source src="media/shine2.mp3" type="audio/mpeg">
+</audio>
+    
+<audio id="end">
+  <source src="media/ludi.mp3" type="audio/mpeg">
+</audio>
+    
+<audio id="menu">
+    <source src="media/lith.mp3" type="audio/mpeg">
+</audio>
+    
+<audio id="play">
+    <source src="media/mapleroad.mp3" type="audio/mpeg">
+</audio>
+    
+<audio id="win">
+    <source src="media/win.mp3" type="audio/mpeg">
+</audio>
+    
+</html>
